@@ -121,15 +121,15 @@ input[type="date"] { width:250px; height:40px; font-size:1.2rem; }
 
 <!-- EXPLOSION -->
 <div id="explosionOverlay">
-  <img src="resources/explosion-gif-transparent.gif" alt="explosion">
+  <img src="./resources/explosion-gif-transparent.gif" alt="explosion">
 </div>
-<audio id="tickAudio" src="resources/5 second countdown with sound effect.mp3" preload="auto"></audio>
-<audio id="explosionAudio" src="resources/deltarune-explosion.mp3"></audio>
+<audio id="tickAudio" src="./resources/5 second countdown with sound effect.mp3" preload="auto" type="audio/mpeg"></audio>
+<audio id="explosionAudio" src="./resources/deltarune-explosion.mp3" type="audio/mpeg"></audio>
 
 <!-- AUDIO CONTROLS -->
 <div id="audioControlsContainer" class="centered" aria-hidden="true">
   <audio id="backgroundAudio" loop>
-    <source src="resources/Liszt - Liebestraum No. 3 (Love Dream).mp3" type="audio/mpeg">
+    <source src="./resources/Liszt - Liebestraum No. 3 (Love Dream).mp3" type="audio/mpeg">
   </audio>
   <button id="audioButton">Play</button>
   <input type="range" min="0" max="1" step="0.01" value="0.5" id="volumeSlider" aria-label="Volume">
@@ -146,7 +146,7 @@ input[type="date"] { width:250px; height:40px; font-size:1.2rem; }
       <button type="button" id="yesBtn">Yes!</button>
       <button type="button" id="noBtn">No :c</button>
     </div>
-    <img src="resources/begging-cat-begging.gif" alt="me begging">
+    <img src="./resources/begging-cat-begging.gif" alt="me begging">
   </div>
 </div>
 
@@ -486,4 +486,5 @@ window.scrollTo({top: mainContent2.offsetTop - 50, behavior:'smooth'});
 </script>
 </body>
 </html>
+
 
