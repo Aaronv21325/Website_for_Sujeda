@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surprise!</title>
+<style>
+@font-face {
+    font-family: 'Aphrodite Pro';
+    src: local('Aphrodite Pro'), local('UVF Aphrodite Pro'), url('UVF Aphrodite Pro.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+html, body { height: 100%; margin: 0; }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: rgb(84,4,29); color: #fff; overflow-x:hidden; }
+
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;  /* center all children horizontally */
+  text-align: center;
+  gap: 1rem;
+}
+h1 { margin:0; font-size:clamp(2.85rem,6.65vw,5.7rem); font-family:'Aphrodite Pro',serif; text-align:center; }
+.controls { display:flex; gap:6rem; justify-content:center; align-items:center; animation: fade-down 0.67s ease forwards;}
+.controls button { background: rgb(122,4,29); color:white; border:none; padding:0.6rem 1.2rem; border-radius:6px; cursor:pointer; font-size:1.8rem; transition: all 60ms ease; transform-origin:center center; will-change:transform; }
+.controls button:focus { outline: 2px solid #fff3; }
+
+img { max-width:100%; height:auto; display:block; margin-top:2rem; border-radius:5px; }
+
+#introScreen { display:flex; flex-direction:column; align-items:center; text-align:center; gap:1rem; min-height:100vh; justify-content:center; }
+#introScreen h1, #introScreen h2 { font-size: 67px; animation: fade-down 0.67s ease forwards; }
+@keyframes fade-down { from { opacity:0; transform:translateY(-30px); } to { opacity:1; transform:translateY(0); } }
+
+#countdown { display:none; position:fixed; inset:0; align-items:center; justify-content:center; z-index:2500; font-size:clamp(3rem,12vw,8rem); font-weight:700; }
+#countdown span { animation:countdown-pop 1s ease-in-out infinite; }
+@keyframes countdown-pop { 0%,100%{transform:scale(1);}50%{transform:scale(1.15);} }
+
+#explosionOverlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgb(84,4,29); opacity:0; transition:opacity 350ms ease; z-index:3000; }
+#explosionOverlay img { width:80%; max-width:800px; height:auto; }
+
+#audioControlsContainer { position:fixed; z-index:4000; display:none; gap:0.6rem; align-items:center; background:transparent; }
+#audioControlsContainer.centered { left:50%; top:50%; transform:translate(-50%,-50%); }
+#audioControlsContainer.corner { right:1rem; bottom:1rem; transform:none; }
+#audioButton { background: rgb(122,4,29); color:#fff; border:none; padding:1rem 1.8rem; border-radius:8px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.4); font-size:2rem; animation: fade-down 1.2s ease forwards;}
+#audioButton:focus { outline:2px solid #fff3; }
+#volumeSlider { width:360px; height:35px; accent-color:rgb(122,4,29); animation: fade-down 1.2s ease forwards;}
+@keyframes slideIn {
+  /* Start state: off-screen on the top (100% of its own width away) */
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  /* End state: at its original position */
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+#valentineScreen {
+    display: none;
+    position: fixed;      /* overlay everything */
+    inset: 0;
+    z-index: 5000;        /* above audioControls */
+    align-items: center;
+    justify-content: center;
+    background: rgb(84,4,29); /* optional overlay */
+    flex-direction: column;
+    text-align: center;
+    animation-name: slideIn;
+  animation-duration: 12s; /* How long the animation takes */
+  animation-timing-function: ease-out; /* The easing function */
+  animation-fill-mode: forwards; /* Ensures the element stays at the 'to' state after the animation finishes */
+}
+#mainContent { display:flex; flex-direction:column; align-items:center; gap:1rem; }
+#mainContent2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;  /* center everything horizontally */
+  gap: 1rem;
+  text-align: center;
+  animation: fade-down 1s ease forwards;
+}
+@keyframes fade-in { to{opacity:1;} }
+
+#downArrow { position:absolute; top:2rem; left:50%; transform:translateX(-50%); font-size:12rem; color:white; animation:bounce 1.2s infinite; pointer-events:none; display:none; }
+@keyframes bounce { 0%,100%{transform:translateY(0);}50%{transform:translateY(20px);} }
+
+.confetti { position:fixed; width:8px; height:12px; border-radius:2px; opacity:1; pointer-events:none; z-index:6000; }
+
+input[type="date"] { width:250px; height:40px; font-size:1.2rem; }
+
+.submit-button {
+  display: flex;               /* flex for perfect text centering */
+  align-items: center;         /* vertical centering */
+  justify-content: center;     /* horizontal centering */
+  text-align: center;
+  width: 130px;
+  height: 55px;
+  font-size: 25px;
+  border-radius: 8px;
+  padding: 0;                  /* remove extra padding */
+}
+</style>
+</head>
+<body>
+
+<!-- INTRO SCREEN -->
+<div id="introScreen">
+  <h2 style="font-size: 60px;">Haii Sujeda!</h2>
+  <h2 style="font-size: 35px;">I have a question for youuu</h2>
+  <h2 style="font-size: 30px;">but first...</h2>
+  <div class="controls">
+    <button class="center-button" id="startButton">Click me!</button>
+  </div>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="countdown"><span id="countdownNumber" style="font-size: 200px;">5</span></div>
+
+<!-- EXPLOSION -->
+<div id="explosionOverlay">
+  <img src="\resources\explosion-gif-transparent.gif" alt="explosion">
+</div>
+<audio id="tickAudio" src="\resources\5 second countdown with sound effect.mp3" preload="auto"></audio>
+<audio id="explosionAudio" src="\resources\deltarune-explosion.mp3"></audio>
+
+<!-- AUDIO CONTROLS -->
+<div id="audioControlsContainer" class="centered" aria-hidden="true">
+  <audio id="backgroundAudio" loop>
+    <source src="resources/Liszt - Liebestraum No. 3 (Love Dream).mp3" type="audio/mpeg">
+  </audio>
+  <button id="audioButton">Play</button>
+  <input type="range" min="0" max="1" step="0.01" value="0.5" id="volumeSlider" aria-label="Volume">
+  <div id="volumeSlider" style="font-size: 25px;">
+    🔊
+</div>
+</div>
+
+<!-- VALENTINE SCREEN -->
+<div id="valentineScreen" class="centered">
+  <div id="mainContent">
+    <h1>Will you be my Valentine?</h1>
+    <div class="controls">
+      <button type="button" id="yesBtn">Yes!</button>
+      <button type="button" id="noBtn">No :c</button>
+    </div>
+    <img src="\resources\begging-cat-begging.gif" alt="me begging">
+  </div>
+</div>
+
+<!-- BIG DOWN ARROW -->
+<div id="downArrow"></div>
+
+<script>
+// ELEMENTS
+const introScreen = document.getElementById('introScreen');
+const startButton = document.getElementById('startButton');
+const countdownEl = document.getElementById('countdown');
+const countdownNumber = document.getElementById('countdownNumber');
+const explosionOverlay = document.getElementById('explosionOverlay');
+const explosionAudio = document.getElementById('explosionAudio');
+const tickAudio = document.getElementById('tickAudio');
+const audioControls = document.getElementById('audioControlsContainer');
+const backgroundAudio = document.getElementById('backgroundAudio');
+const audioButton = document.getElementById('audioButton');
+const volumeSlider = document.getElementById('volumeSlider');
+const valentineScreen = document.getElementById('valentineScreen');
+const mainContent = document.getElementById('mainContent');
+const downArrow = document.getElementById('downArrow');
+
+// AUDIO INIT
+let savedVolume = localStorage.getItem('bgVolume');
+if(savedVolume!==null){ backgroundAudio.volume = parseFloat(savedVolume); volumeSlider.value=savedVolume; }
+else { backgroundAudio.volume=0.5; volumeSlider.value=0.5; }
+function updateButtonLabel(){ audioButton.textContent = backgroundAudio.paused?'Play':'Pause'; }
+function toggleAudioPlayback(){ if(backgroundAudio.paused){backgroundAudio.play();}else{backgroundAudio.pause();} updateButtonLabel(); }
+volumeSlider.addEventListener('input', ()=>{ backgroundAudio.volume=Number(volumeSlider.value); localStorage.setItem('bgVolume',volumeSlider.value); });
+backgroundAudio.addEventListener('pause', updateButtonLabel);
+updateButtonLabel();
+
+// START BUTTON HANDLER
+startButton.addEventListener('click',()=>{
+    introScreen.style.opacity='0';
+    setTimeout(()=>{ introScreen.style.display='none'; startCountdown(); },600);
+});
+
+// COUNTDOWN FUNCTION
+function startCountdown(){
+    countdownEl.style.display='flex';
+    let time=5;
+    countdownNumber.textContent=time;
+    const interval=setInterval(()=>{
+        tickAudio.currentTime=0; tickAudio.play().catch(()=>{});
+        countdownNumber.textContent=time;
+        time--;
+        if(time < 0){
+    clearInterval(interval);
+    tickAudio.pause();
+    countdownEl.style.display='none';
+
+    // Explosion overlay
+    explosionOverlay.style.display='flex';
+    explosionOverlay.style.opacity='0';
+    requestAnimationFrame(()=>{ explosionOverlay.style.opacity='1'; });
+    explosionAudio.currentTime=0;
+    explosionAudio.play().catch(()=>{});
+
+    setTimeout(()=>{
+        explosionOverlay.style.opacity='0';
+        setTimeout(()=>{
+            explosionOverlay.style.display='none';
+
+            // Show audio controls in center
+            audioControls.style.display = 'flex';
+            audioControls.classList.add('centered');
+            audioControls.setAttribute('aria-hidden','false');
+
+        },350);
+    },2000);
+}
+    },1000);
+}
+
+// AUDIO PLAY HANDLER
+audioButton.addEventListener('click', () => {
+    if(backgroundAudio.paused){
+        backgroundAudio.play().catch(()=>{});
+    } else {
+        backgroundAudio.pause();
+    }
+    updateButtonLabel();
+
+    // Show Valentine screen and confetti on first Play click
+    const valentineStyle = getComputedStyle(valentineScreen);
+    if(valentineStyle.display === 'none') {
+        // Make sure audio controls are visible
+        audioControls.style.display = 'flex';
+        audioControls.setAttribute('aria-hidden', 'false');
+
+        // Move audio controls to corner
+        audioControls.classList.remove('centered');
+        audioControls.style.display = 'none';
+        
+        // Show Valentine screen
+        valentineScreen.style.display = 'flex';
+        valentineScreen.style.opacity = 0;
+        requestAnimationFrame(()=>{
+            valentineScreen.style.transition = 'opacity 0.6s ease';
+            valentineScreen.style.opacity = 1;
+
+            // Start confetti
+            createConfettiBurst(1000);
+        });
+    }
+});
+
+
+// CONFETTI
+function createConfettiBurst(count = 1000) {
+    const colors = ['#ff5e7e','#ffd166','#8ce99a','#7bdff6','#cba6ff','#fff6a8'];
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+
+            const w = 3 + Math.random() * 14;
+            const h = 6 + Math.random() * 20;
+            c.style.width = w + 'px';
+            c.style.height = h + 'px';
+            c.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+            c.style.left = Math.random() * vw + 'px';
+            c.style.top = -(Math.random() * 100 + 100) + 'px';
+
+            const startRot = Math.random() * 360;
+            const spin = (Math.random() - 0.5) * 120; // ⬅️ MUCH smaller rotation
+            const drift = (Math.random() - 0.5) * 120;
+            const duration = 8000 + Math.random() * 3000;
+
+            c.style.transform = `rotate(${startRot}deg)`;
+            c.style.animation = `confetti-fall-${i} ${duration}ms cubic-bezier(.25,.6,.3,1) forwards`;
+
+            const styleEl = document.createElement('style');
+            styleEl.textContent = `
+                @keyframes confetti-fall-${i} {
+                    to {
+                        transform:
+                            translate(${drift}px, ${vh + 300}px)
+                            rotate(${startRot + spin}deg);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(styleEl);
+
+            document.body.appendChild(c);
+
+            c.addEventListener('animationend', () => {
+                c.remove();
+                styleEl.remove();
+            });
+        }, i * 6);
+    }
+}
+
+// YES/NO BUTTON LOGIC
+const yesBtn = document.getElementById('yesBtn');
+const noBtn = document.getElementById('noBtn');
+let yesScale=1, noScale=1, noClicks=0;
+const yesStep=0.1, noStep=0.03, baseDist=100, factor=1.1, maxDistance=8000, minNoScale=0.00000001, maxYesScale=200;
+function applyNoMove(){
+    const rect=noBtn.getBoundingClientRect();
+    const distance=Math.min(baseDist*(Math.pow(factor,noClicks)-1),maxDistance);
+    const x=(Math.random()-0.5)*2*distance;
+    const y=(Math.random()-0.5)*2*distance;
+    noBtn.style.transform=`translate(${x}px,${y}px) scale(${noScale})`;
+    noBtn.style.zIndex=998;
+}
+noBtn.addEventListener('click',()=>{
+    noClicks++;
+    noScale=Math.max(noScale-noStep,minNoScale);
+    yesScale=Math.min(yesScale+yesStep,maxYesScale);
+    yesBtn.style.position='relative';
+    yesBtn.style.zIndex=999;
+    yesBtn.style.transform=`scale(${yesScale})`;
+    yesBtn.style.padding=`${1.2*yesScale}rem ${2.4*yesScale}rem`;
+    yesBtn.style.fontSize=`${1.8*yesScale}rem`;
+    applyNoMove();
+});
+yesBtn.addEventListener('click', ()=> {
+    // Reset scales
+    yesScale = noScale = noClicks = 1;
+
+    // Hide Valentine screen
+    valentineScreen.style.display = 'none';
+
+    // Insert feedback content
+    const secondContent = `
+<div id="mainContent2" class="centered" style="position:relative;">
+  <div id="arrowContainer" style="position:absolute; top:-12rem; left:50%; transform:translateX(-50%);">
+    <div id="downArrow" style="font-size:12rem; color:white; animation:bounce 1.2s infinite;"></div>
+  </div>
+  <h2>YAYYAYYAYAYAAA sorry I took so long😅</h2>
+  <div>
+    <h1>Day you Must be Free on</h1>
+    <label for="valentine-day" style="display:block; margin-top:0.5rem;"></label>
+    <input type="date" id="valentine-day" name="day-you-must-be-free" value="2026-02-14" min="2026-02-14" max="2026-02-14">
+  </div>
+  <h2>Tell me how I did! ❤️🫰</h2>
+  <button class="center-button submit-button" onclick="window.open('https://www.tiktok.com/@ricehat741','_blank')">Submit</button>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <h2>Love, Aaron Khiang Tran (P.S. I was finishing this while you waited sorrryyyyy)</h2>
+  <h1>Scroll down :0</h1>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <h2>P.P.S I'm using more time before showing you this to add more photos from my iPad, which I have to connect to my PC so the files are included ;-;</h2>
+  <img src="resources/Screenshot 2025-09-20 201113.png" alt="67" width="400px">
+  <img src="resources/Screenshot 2026-01-05 155712.png" alt="shawarma">
+  <img src="resources/Screenshot 2026-01-15 232506.png" alt="We're ducks!">
+  <img src="resources/Screenshot 2025-10-05 144651.png" alt="Epic Minecraft Cave with Sujeda" width="1200px">
+  <img src="resources/Screenshot 2026-01-16 112529.png" alt="Cute!" width="1250px">
+  <img src="resources/Screenshot 2026-01-16 112613.png" alt="Adorable!" width="500px">
+  <img src="resources/Screenshot 2026-01-16 112627.png" alt="So sweet!" width="1200px">
+  <img src="resources/Screenshot 2026-01-16 112852.png" alt="Lovely!" width="500px">
+  <img src="resources/Screenshot 2026-01-16 112934.png" alt="Amazing!" width="1000px">
+  <img src="resources/Screenshot 2025-07-10 123741.png" alt="Friendly!" width="500px">
+</div>`;
+
+document.body.insertAdjacentHTML('beforeend', secondContent);
+
+// Scroll to feedback
+const mainContent2 = document.getElementById('mainContent2');
+window.scrollTo({top: mainContent2.offsetTop - 50, behavior:'smooth'});
+});
+</script>
+</body>
+</html>
